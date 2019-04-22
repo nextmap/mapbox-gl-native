@@ -2,12 +2,15 @@ package com.mapbox.mapboxsdk;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.text.format.DateUtils;
 
 import com.mapbox.android.accounts.v1.MapboxAccounts;
 import com.mapbox.mapboxsdk.constants.MapboxConstants;
+import com.mapbox.mapboxsdk.log.Logger;
 
 /**
  * REMOVAL OR MODIFICATION OF THE FOLLOWING CODE VIOLATES THE MAPBOX TERMS
@@ -27,6 +30,8 @@ import com.mapbox.mapboxsdk.constants.MapboxConstants;
  * You can access the Mapbox Terms of Service at https://www.mapbox.com/tos/
  */
 class AccountsManager {
+  private static final String TAG = "Mbgl-AccountsManager";
+
   private static final String PREFERENCE_USER_ID = "com.mapbox.mapboxsdk.accounts.userid";
   private static final String PREFERENCE_TIMESTAMP = "com.mapbox.mapboxsdk.accounts.timestamp";
   private static final String PREFERENCE_SKU_TOKEN = "com.mapbox.mapboxsdk.accounts.skutoken";
@@ -35,8 +40,33 @@ class AccountsManager {
   private String skuToken;
 
   AccountsManager() {
-    String userId = validateUserId();
-    validateRotation(userId);
+    if (isSkuTokenEnabled()) {
+      String userId = validateUserId();
+      validateRotation(userId);
+    } else {
+      timestamp = 0L;
+      skuToken = null;
+    }
+  }
+
+  private boolean isSkuTokenEnabled() {
+    boolean isEnabled = MapboxConstants.DEFAULT_ENABLE_SKU_TOKEN;
+    try {
+      // Try getting a custom value from the app Manifest
+      ApplicationInfo appInfo = Mapbox.getApplicationContext().getPackageManager().getApplicationInfo(
+          Mapbox.getApplicationContext().getPackageName(),
+          PackageManager.GET_META_DATA);
+      if (appInfo.metaData != null) {
+        isEnabled = appInfo.metaData.getBoolean(
+            MapboxConstants.KEY_META_DATA_ENABLE_SKU_TOKEN,
+            MapboxConstants.DEFAULT_ENABLE_SKU_TOKEN
+        );
+      }
+    } catch (Exception exception) {
+      Logger.e(TAG, "Failed to read the package metadata: ", exception);
+    }
+
+    return isEnabled;
   }
 
   private String validateUserId() {
@@ -63,7 +93,7 @@ class AccountsManager {
   }
 
   String getSkuToken() {
-    if (isExpired()) {
+    if (isSkuTokenEnabled() && isExpired()) {
       SharedPreferences sharedPreferences = getSharedPreferences();
       String userId = sharedPreferences.getString(PREFERENCE_USER_ID, "");
       skuToken = generateSkuToken(userId);
