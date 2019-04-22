@@ -37,8 +37,11 @@ class AccountsManager {
   private long timestamp;
   private String skuToken;
 
+  private boolean isEnabled;
+
   AccountsManager() {
-    if (isSkuTokenEnabled()) {
+    isEnabled = isSkuTokenEnabled();
+    if (isEnabled) {
       String userId = validateUserId();
       validateRotation(userId);
     } else {
@@ -48,14 +51,14 @@ class AccountsManager {
   }
 
   private boolean isSkuTokenEnabled() {
-    boolean isEnabled = MapboxConstants.DEFAULT_ENABLE_SKU_TOKEN;
+    boolean value = MapboxConstants.DEFAULT_ENABLE_SKU_TOKEN;
     try {
       // Try getting a custom value from the app Manifest
       ApplicationInfo appInfo = Mapbox.getApplicationContext().getPackageManager().getApplicationInfo(
           Mapbox.getApplicationContext().getPackageName(),
           PackageManager.GET_META_DATA);
       if (appInfo.metaData != null) {
-        isEnabled = appInfo.metaData.getBoolean(
+        value = appInfo.metaData.getBoolean(
             MapboxConstants.KEY_META_DATA_ENABLE_SKU_TOKEN,
             MapboxConstants.DEFAULT_ENABLE_SKU_TOKEN
         );
@@ -64,7 +67,7 @@ class AccountsManager {
       Logger.e(TAG, "Failed to read the package metadata: ", exception);
     }
 
-    return isEnabled;
+    return value;
   }
 
   private String validateUserId() {
@@ -91,7 +94,7 @@ class AccountsManager {
   }
 
   String getSkuToken() {
-    if (isSkuTokenEnabled() && isExpired()) {
+    if (isEnabled && isExpired()) {
       SharedPreferences sharedPreferences = getSharedPreferences();
       String userId = sharedPreferences.getString(PREFERENCE_USER_ID, "");
       skuToken = generateSkuToken(userId);
