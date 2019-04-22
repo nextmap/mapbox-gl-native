@@ -13,21 +13,19 @@ import com.mapbox.mapboxsdk.constants.MapboxConstants;
 import com.mapbox.mapboxsdk.log.Logger;
 
 /**
- * REMOVAL OR MODIFICATION OF THE FOLLOWING CODE VIOLATES THE MAPBOX TERMS
- * OF SERVICE
+ * IF YOU USE THIS CODE WITH MAPBOX MAPPING API, REMOVAL OR MODIFICATION OF
+ * THE FOLLOWING CODE VIOLATES THE MAPBOX TERMS OF SERVICE.
  *
- * The following code is used to access Mapbox's Mapping APIs.
+ * The following code is used to access Mapbox's Mapping APIs. Removal or
+ * modification of this code when used with Mapbox's Mapping APIs can result
+ * in higher fees and/or termination of your account with Mapbox.
  *
- * Removal or modification of this code when used with Mapbox's Mapping APIs
- * can result in termination of your agreement and/or your account with
- * Mapbox.
+ * Under the Mapbox Terms of Service, you may not use this code to access
+ * Mapbox Mapping APIs other than through Mapbox SDKs.
  *
- * Using this code to access Mapbox Mapping APIs from outside the Mapbox Maps
- * SDK also violates the Mapbox Terms of Service. On Android, Mapping APIs
- * should be accessed using the methods documented at
- * https://www.mapbox.com/android.
- *
- * You can access the Mapbox Terms of Service at https://www.mapbox.com/tos/
+ * The Android documentation to access Mapping APIs is available at
+ * https://www.mapbox.com/android and the Mapbox Terms of Service are
+ * available at https://www.mapbox.com/tos/.
  */
 class AccountsManager {
   private static final String TAG = "Mbgl-AccountsManager";
