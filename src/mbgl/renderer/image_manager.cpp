@@ -48,8 +48,8 @@ bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
         updatedImageVersions[image_->id]++;
     }
 
-    removeImage(image_->id);
-    addImage(std::move(image_));
+    removePattern(image_->id);
+    oldImage->second = std::move(image_);
 
     return sizeChanged;
 }
@@ -57,7 +57,11 @@ bool ImageManager::updateImage(Immutable<style::Image::Impl> image_) {
 void ImageManager::removeImage(const std::string& id) {
     assert(images.find(id) != images.end());
     images.erase(id);
+    requestedImages.erase(id);
+    removePattern(id);
+}
 
+void ImageManager::removePattern(const std::string& id) {
     auto it = patterns.find(id);
     if (it != patterns.end()) {
         // Clear pattern from the atlas image.
@@ -95,7 +99,12 @@ void ImageManager::getImages(ImageRequestor& requestor, ImageRequestPair&& pair)
         for (const auto& dependency : pair.first) {
             if (images.find(dependency.first) == images.end()) {
                 hasAllDependencies = false;
-                break;
+            } else {
+                // Associate requestor with an image that was provided by the client.
+                auto it = requestedImages.find(dependency.first);
+                if (it != requestedImages.end()) {
+                    it->second.emplace(&requestor);
+                }
             }
         }
 
@@ -112,6 +121,9 @@ void ImageManager::getImages(ImageRequestor& requestor, ImageRequestPair&& pair)
 void ImageManager::removeRequestor(ImageRequestor& requestor) {
     requestors.erase(&requestor);
     missingImageRequestors.erase(&requestor);
+    for (auto& requestedImage : requestedImages) {
+        requestedImage.second.erase(&requestor);
+    }
 }
 
 void ImageManager::notifyIfMissingImageAdded() {
@@ -125,12 +137,28 @@ void ImageManager::notifyIfMissingImageAdded() {
     }
 }
 
+void ImageManager::reduceMemoryUse() {
+    std::vector<std::string> unusedImages;
+    unusedImages.reserve(requestedImages.size());
+    for (auto& requestedImage : requestedImages)  {
+        if (requestedImage.second.empty() &&
+            images.find(requestedImage.first) != images.end()) {
+            unusedImages.push_back(requestedImage.first);
+        }
+    }
+
+    for (auto& unusedImage : unusedImages) {
+        removeImage(unusedImage);
+    }
+}
+
 void ImageManager::checkMissingAndNotify(ImageRequestor& requestor, const ImageRequestPair& pair) {
     unsigned int missing = 0;
     for (const auto& dependency : pair.first) {
         auto it = images.find(dependency.first);
         if (it == images.end()) {
             missing++;
+            requestedImages[dependency.first].emplace(&requestor);
         }
     }
 
